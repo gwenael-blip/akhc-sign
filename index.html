@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<!-- This page has no server behind it. The policy below also stops it from sending anything anywhere:
-     no network requests at all (connect-src 'none'), no forms posted, the one outside script is the PDF library. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<!-- The policy below limits what this page can reach: one address only (connect-src), the store that keeps agreements
+     for short links in scrambled form. No forms are posted, and the one outside script is the PDF library.
+     The renter's details and signature are never sent anywhere by the page. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app; form-action 'none'; base-uri 'none'">
 <title>Rental agreement · Lejeaftale</title>
 <style>
 /* Layout: one column, a document to read and a form to sign at the end. The agreement sits on a sheet; the
@@ -97,7 +98,7 @@ footer.wrap { padding-block: 0 24px; font-size: 13px; color: var(--muted); }
 /* Short links: the lessor's browser stores the agreement here, encrypted, and the link carries only the key.
    STORE is the address of a small key-value store (a Firebase Realtime Database). Empty = short links are off.
    When it is set, the content policy in the head must allow that one address under connect-src. */
-const STORE = '';
+const STORE = 'https://akhc-sign-default-rtdb.europe-west1.firebasedatabase.app';
 const PDF_LIB = { src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', sri: 'sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==' };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
