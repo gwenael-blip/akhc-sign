@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<!-- This page has no server behind it. The policy below also stops it from sending anything anywhere:
+     no network requests at all (connect-src 'none'), no forms posted, the one outside script is the PDF library. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Lejeaftale · Rental agreement</title>
+<style>
+/* Layout: one column, a document to read and a form to sign at the end. The agreement sits on a sheet; the
+   signature pad is paper white in both themes, like the form it replaces. No outside fonts or images. */
+:root {
+  --bg: #E7EBEB; --sheet: #F8FAF9; --sunk: #DCE2E2; --ink: #14191B; --muted: #55636A; --line: #C2CBCC;
+  --accent: #1C5D77; --accent-ink: #FFFFFF; --ok: #27734A; --err: #B23A14;
+  --paper: #FFFFFF; --paper-ink: #000000; --paper-gray: #6A6A6A; --paper-line: #B8B8B8;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0F1416; --sheet: #182024; --sunk: #0A0E10; --ink: #E5ECEC; --muted: #98A6AC; --line: #2A353A;
+    --accent: #74B9D5; --accent-ink: #07212C; --ok: #5DC58B; --err: #FF7D52; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f-body); }
+.wrap { max-width: 680px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); }
+header.top { border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+header.top .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 14px; }
+.who { font-weight: 800; font-size: 20px; letter-spacing: .02em; overflow-wrap: anywhere; }
+.kind { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+main { display: grid; gap: 16px; padding-block: 16px calc(40px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
+h1 { font-size: 26px; line-height: 1.15; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h2 { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0; }
+p { margin: 0; }
+.lead { font-size: 17px; max-width: 60ch; }
+.note { font-size: 14px; color: var(--muted); max-width: 62ch; }
+.muted { color: var(--muted); }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 18px 16px; display: grid; gap: 16px; min-width: 0; }
+dl { margin: 0; display: grid; gap: 12px; }
+dl > div { min-width: 0; }
+dt { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.parties { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.num { font-variant-numeric: tabular-nums; }
+.count { font-variant-numeric: tabular-nums; }
+ul.gear { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+ul.gear li { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); }
+ul.gear li:first-child { border-top: 0; }
+.id { font: 600 13px/1.6 var(--f-mono); color: var(--muted); white-space: nowrap; }
+.what { display: grid; gap: 1px; min-width: 0; overflow-wrap: anywhere; }
+.what small { color: var(--muted); font-size: 13px; }
+.total { font-weight: 700; font-variant-numeric: tabular-nums; }
+.terms { display: grid; gap: 8px; font-size: 15px; max-width: 68ch; }
+label.lbl, .lbl { display: block; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+input[type="text"], textarea { width: 100%; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-height: 46px; }
+textarea { resize: vertical; line-height: 1.4; }
+input[type="checkbox"] { width: 22px; height: 22px; flex: none; margin: 2px 0 0; accent-color: var(--ok); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.field { min-width: 0; }
+.fields { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.fields .full { grid-column: 1 / -1; }
+.check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.pad { position: relative; background: var(--paper); border: 1px solid var(--paper-line); border-radius: 8px; overflow: hidden; }
+.pad canvas { display: block; width: 100%; height: clamp(150px, 44vw, 230px); touch-action: none; cursor: crosshair; }
+.pad::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 24%; border-bottom: 1px solid var(--paper-gray); pointer-events: none; }
+.pad .x { position: absolute; left: 16px; bottom: calc(24% + 5px); font: 18px/1 var(--f-mono); color: var(--paper-gray); pointer-events: none; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: inherit; font-weight: 700; font-size: 15px; line-height: 1.15; min-height: 46px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--sheet); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.big { min-height: 56px; font-size: 17px; padding: 0 22px; }
+.btn:disabled { opacity: .5; cursor: wait; }
+.err { color: var(--err); font-weight: 700; }
+.done .tick { width: 44px; height: 44px; border-radius: 50%; background: var(--ok); color: var(--sheet); display: grid; place-items: center; font-size: 24px; font-weight: 700; line-height: 1; }
+details summary { cursor: pointer; font-weight: 700; }
+details[open] summary { margin-bottom: 10px; }
+details { display: block; }
+details > * + * { margin-top: 10px; }
+#code { font: 12px/1.4 var(--f-mono); word-break: break-all; }
+footer.wrap { padding-block: 0 24px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><span class="who" id="who"></span><span class="kind" id="kind"></span></div></header>
+<main class="wrap" id="app"><noscript><p class="lead">This page needs JavaScript to show and sign the agreement. · Siden skal bruge JavaScript for at vise og underskrive aftalen.</p></noscript></main>
+<footer class="wrap" id="foot"></footer>
+<script>
+(() => {
+'use strict';
+/* The agreement arrives packed into the part of the link after "#", which browsers never send to a server.
+   The page unpacks it, shows it, takes a signature and builds a PDF, all on this device. It must stay in step with
+   the gear tracker in three places: the shape of the agreement (sigDoc), canon() and the return code. */
+const PDF_LIB = { src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', sri: 'sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==' };
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad2 = n => String(n).padStart(2, '0');
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+const nfc = s => String(s ?? '').normalize('NFC').trim();
+const dmy = iso => /^\d{4}-\d{2}-\d{2}/.test(iso || '') ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}` : String(iso || '');
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+const nfmt = (n, lang) => r2(n).toLocaleString(lang === 'en' ? 'en-GB' : 'da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const num = v => parseFloat(String(v).replace(',', '.')) || 0;
+
+const T = {
+  da: { kind: 'Lejeaftale', title: 'LEJEAFTALE', dateLbl: 'Aftaledato', lessor: 'Udlejer', renter: 'Lejer', period: 'Lejeperiode', from: 'Fra', to: 'Til', contact: 'Kontakt', id: 'CVR/CPR-nr.', equip: 'Udstyr',
+    cols: ['Nr.', 'Udstyr', 'Serienr.', 'Genanskaffelse DKK'], total: 'Genanskaffelsesværdi i alt', price: 'Forventet lejepris ekskl. moms', deposit: 'Depositum', deductible: 'Selvrisiko', none: 'Ingen', terms: 'Vilkår',
+    sign: 'Dato og underskrift', page: 'Side', of: 'af', cond: 'Stand ved udlevering', place: 'Udleveringssted', phone: 'Tlf.', mail: 'E-mail',
+    lead: 'Læs aftalen igennem, udfyld dine oplysninger, og underskriv nederst på siden.', priv: 'Siden kører kun på din egen telefon eller computer. Intet bliver sendt, før du selv sender den underskrevne aftale tilbage.',
+    you: 'Dine oplysninger', name: 'Fulde navn på den, der underskriver', nameHint: 'Skriv dit eget navn, også når du underskriver for et firma.', addr: 'Adresse', rid: 'CVR- eller ID-nr. (hvis du har et)', contactIn: 'Telefon eller e-mail',
+    here: 'Underskriv her med fingeren', clear: 'Ryd', go: 'Underskriv', working: 'Laver den underskrevne aftale…', needName: 'Skriv dit navn.', needAddr: 'Skriv din adresse.', needAccept: 'Sæt kryds ved, at du accepterer aftalen.', needInk: 'Underskriv i feltet.',
+    esigned: 'Underskrevet elektronisk', at: 'kl.', record: 'ELEKTRONISK UNDERSKRIFT', device: 'Underskrevet med fingeren på Lejers egen enhed via et link fra Udlejer (AKHC Gear).', stmt: 'Erklæring', docid: 'Dokument-ID (SHA-256)', file: 'underskrevet', fileBase: 'Lejeaftale',
+    doneH: 'Underskrevet', doneLead: n => `Ét trin mangler: send den underskrevne aftale tilbage til ${n}.`, share: 'Send den underskrevne aftale', download: 'Hent PDF-filen', keep: 'PDF-filen er også dit eget eksemplar af aftalen. Gem den.', sendTo: 'Send den til',
+    codeH: 'Kan du ikke sende PDF-filen?', codeLead: 'Kopiér returkoden herunder, og send den som almindelig tekst i stedet. Den indeholder din underskrift og dine oplysninger.', copy: 'Kopiér returkoden', copied: 'Kopieret. Sæt den ind i en besked.', copyFail: 'Markér teksten i feltet, og kopiér den.', mailIt: 'Send koden med e-mail',
+    noPdf: 'PDF-filen kunne ikke laves på denne enhed. Send returkoden herunder i stedet.', shareTitle: 'Underskrevet lejeaftale', shareText: n => `Underskrevet lejeaftale, ${n}`, mailSubject: n => `Underskrevet lejeaftale, ${n}`, mailBody: 'Her er returkoden for min underskrift på lejeaftalen:',
+    errNo: 'Linket mangler selve aftalen. Bed om et nyt link.', errBad: 'Linket er ufuldstændigt. Det sker, når kun en del af linket bliver kopieret. Bed om et nyt link.', errOld: 'Denne browser er for gammel til at åbne aftalen. Åbn linket i en opdateret Safari eller Chrome.',
+    foot: 'Aftalen ligger i selve linket. Denne side gemmer ingenting og har ingen server.' },
+  en: { kind: 'Rental agreement', title: 'RENTAL AGREEMENT', dateLbl: 'Agreement date', lessor: 'Lessor', renter: 'Renter', period: 'Rental period', from: 'From', to: 'To', contact: 'Contact', id: 'CVR/ID no.', equip: 'Equipment',
+    cols: ['No.', 'Equipment', 'Serial no.', 'Replacement value DKK'], total: 'Total replacement value', price: 'Expected rental price excl. VAT', deposit: 'Deposit', deductible: 'Deductible', none: 'None', terms: 'Terms',
+    sign: 'Date and signature', page: 'Page', of: 'of', cond: 'Condition at handover', place: 'Handover place', phone: 'Phone', mail: 'E-mail',
+    lead: 'Read the agreement through, fill in your details and sign at the bottom of the page.', priv: 'This page runs only on your own phone or computer. Nothing is sent until you send the signed agreement back yourself.',
+    you: 'Your details', name: 'Full name of the person signing', nameHint: 'Write your own name, also when you sign for a company.', addr: 'Address', rid: 'CVR or ID number (if you have one)', contactIn: 'Phone or email',
+    here: 'Sign here with your finger', clear: 'Clear', go: 'Sign', working: 'Making the signed agreement…', needName: 'Write your name.', needAddr: 'Write your address.', needAccept: 'Tick the box to accept the agreement.', needInk: 'Sign in the box.',
+    esigned: 'Signed electronically', at: 'at', record: 'ELECTRONIC SIGNATURE', device: "Signed by finger on the Renter's own device, from a link sent by the Lessor (AKHC Gear).", stmt: 'Statement', docid: 'Document ID (SHA-256)', file: 'signed', fileBase: 'Rental_agreement',
+    doneH: 'Signed', doneLead: n => `One step left: send the signed agreement back to ${n}.`, share: 'Send the signed agreement', download: 'Download the PDF', keep: 'The PDF is also your own copy of the agreement. Keep it.', sendTo: 'Send it to',
+    codeH: "Can't send the PDF?", codeLead: 'Copy the return code below and send it as plain text instead. It holds your signature and your details.', copy: 'Copy the return code', copied: 'Copied. Paste it into a message.', copyFail: 'Select the text in the box and copy it.', mailIt: 'Send the code by email',
+    noPdf: 'The PDF could not be made on this device. Send the return code below instead.', shareTitle: 'Signed rental agreement', shareText: n => `Signed rental agreement, ${n}`, mailSubject: n => `Signed rental agreement, ${n}`, mailBody: 'Here is the return code for my signature on the rental agreement:',
+    errNo: 'This link does not hold an agreement. Ask for a new link.', errBad: 'This link is incomplete. That happens when only part of it was copied. Ask for a new link.', errOld: 'This browser is too old to open the agreement. Open the link in an up-to-date Safari or Chrome.',
+    foot: 'The agreement is inside the link itself. This page stores nothing and has no server.' },
+};
+
+/* ---- the same fingerprint as the tracker: keys sorted, text NFC, SHA-256 ---- */
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k.normalize('NFC')) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(typeof v === 'string' ? v.normalize('NFC') : (v === undefined ? null : v));
+}
+const SHA_K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+function sha256Js(msg) {
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+  const l = msg.length, total = ((l + 9 + 63) >> 6) << 6, m = new Uint8Array(total), w = new Uint32Array(64);
+  m.set(msg); m[l] = 0x80;
+  const dv = new DataView(m.buffer); dv.setUint32(total - 8, Math.floor(l / 536870912)); dv.setUint32(total - 4, (l * 8) >>> 0);
+  for (let o = 0; o < total; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = dv.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) { const a = w[i - 15], b = w[i - 2]; w[i] = (w[i - 16] + (rotr(a, 7) ^ rotr(a, 18) ^ (a >>> 3)) + w[i - 7] + (rotr(b, 17) ^ rotr(b, 19) ^ (b >>> 10))) >>> 0; }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + SHA_K[i] + w[i]) >>> 0;
+      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+  }
+  return [...H].map(x => x.toString(16).padStart(8, '0')).join('');
+}
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  if (window.crypto && crypto.subtle) { try { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { /* use the plain one */ } }
+  return sha256Js(bytes);
+}
+
+/* ---- packing: JSON, squeezed, as link-safe text. First character: 1 = deflate, 0 = plain ---- */
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = s => { const b = atob(String(s).replace(/-/g, '+').replace(/_/g, '/')), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+async function zipJson(obj) {
+  const raw = new TextEncoder().encode(JSON.stringify(obj));
+  if (typeof CompressionStream === 'function') { try { return '1' + b64u(new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer())); } catch (e) { /* send it plain */ } }
+  return '0' + b64u(raw);
+}
+async function unzipJson(s) {
+  const bytes = unb64u(String(s).slice(1));
+  if (s[0] === '0') return JSON.parse(new TextDecoder().decode(bytes));
+  if (s[0] !== '1' || typeof DecompressionStream !== 'function') throw new Error('cannot unpack');
+  return JSON.parse(new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()));
+}
+
+/* ---- state ---- */
+const S = { doc: null, hash: '', lang: 'da', strokes: [], h: 300, code: '', pdf: null, file: null, fit: null };
+const pdfLib = new Promise((res, rej) => { // fetched while the renter reads, so signing does not wait for it
+  const s = document.createElement('script'); s.src = PDF_LIB.src; s.integrity = PDF_LIB.sri; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+  s.onload = res; s.onerror = () => rej(new Error('PDF library did not load')); document.head.appendChild(s);
+});
+pdfLib.catch(() => {});
+
+function okDoc(d) {
+  const str = (v, n) => typeof v === 'string' && v.length <= n;
+  return !!d && typeof d === 'object' && d.v === 1 && str(d.renter, 200) && !!d.renter.trim() && str(d.terms, 20000) && !!d.terms.trim() && str(d.accept, 600) && !!d.accept.trim()
+    && !!d.lessor && typeof d.lessor === 'object' && str(d.lessor.name, 200) && !!d.lessor.name.trim()
+    && Array.isArray(d.items) && d.items.length > 0 && d.items.length <= 500 && d.items.every(i => i && str(i.id, 20) && str(i.name, 300))
+    && ['date', 'start', 'due', 'place', 'price', 'deposit', 'deductible'].every(k => d[k] === undefined || str(String(d[k]), 300));
+}
+function show(html) { $('#app').innerHTML = html; window.scrollTo(0, 0); }
+function fail(key) {
+  const both = k => `<p class="lead">${esc(T.da[k])}</p><p class="lead muted">${esc(T.en[k])}</p>`;
+  $('#kind').textContent = 'Lejeaftale · Rental agreement';
+  show(`<section class="sheet">${both(key)}</section>`);
+}
+
+/* ---- signature pad: strokes on a pad 1000 units wide ---- */
+function sigBox(strokes) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const s of strokes) for (let i = 0; i + 1 < s.length; i += 2) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); }
+  return x0 === Infinity ? { x0: 0, y0: 0, x1: 1, y1: 1 } : { x0, y0, x1, y1 };
+}
+function sigInk(strokes) { let n = 0; for (const s of strokes) for (let i = 2; i + 1 < s.length; i += 2) n += Math.hypot(s[i] - s[i - 2], s[i + 1] - s[i - 1]); return n; }
+function sigPaint(cv, strokes) {
+  const ctx = cv.getContext('2d'), k = cv.width / 1000;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = getComputedStyle(cv).getPropertyValue('--paper-ink').trim() || '#000';
+  ctx.lineWidth = Math.max(2, cv.width / 260); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const s of strokes) {
+    ctx.beginPath(); ctx.moveTo(s[0] * k, s[1] * k);
+    if (s.length < 4) ctx.lineTo(s[0] * k + 0.1, s[1] * k);
+    else { for (let i = 2; i < s.length - 2; i += 2) ctx.quadraticCurveTo(s[i] * k, s[i + 1] * k, (s[i] + s[i + 2]) / 2 * k, (s[i + 1] + s[i + 3]) / 2 * k); ctx.lineTo(s[s.length - 2] * k, s[s.length - 1] * k); }
+    ctx.stroke();
+  }
+}
+function padInit() {
+  const cv = $('#pad'); if (!cv) return;
+  const fit = () => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1); if (!r.width) return;
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); S.h = Math.round(1000 * r.height / r.width); sigPaint(cv, S.strokes);
+  };
+  S.fit = fit; fit();
+  let cur = null, pid = null;
+  const add = e => {
+    const r = cv.getBoundingClientRect(), x = clamp(Math.round((e.clientX - r.left) / r.width * 1000), 0, 1000), y = clamp(Math.round((e.clientY - r.top) / r.width * 1000), 0, S.h), n = cur.length;
+    if (n && Math.abs(x - cur[n - 2]) + Math.abs(y - cur[n - 1]) < 3) return;
+    if (S.strokes.reduce((m, s) => m + s.length, n) >= 6000) return; // 3,000 points is far more than a signature needs
+    cur.push(x, y);
+    const ctx = cv.getContext('2d'), k = cv.width / 1000;
+    ctx.beginPath(); ctx.moveTo((n ? cur[n - 2] : x) * k, (n ? cur[n - 1] : y) * k); ctx.lineTo(x * k + (n ? 0 : 0.1), y * k); ctx.stroke();
+  };
+  cv.addEventListener('pointerdown', e => { if (pid !== null || e.button > 0) return; e.preventDefault(); pid = e.pointerId; try { cv.setPointerCapture(pid); } catch (x) { /* drawing still works inside the pad */ } cur = []; add(e); });
+  cv.addEventListener('pointermove', e => { if (e.pointerId !== pid || !cur) return; e.preventDefault(); const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : []; (evs.length ? evs : [e]).forEach(add); });
+  const end = e => { if (e.pointerId !== pid) return; pid = null; if (cur && cur.length) S.strokes.push(cur); cur = null; sigPaint(cv, S.strokes); };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  cv.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  cv.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+}
+window.addEventListener('resize', () => { if (S.fit && $('#pad')) S.fit(); });
+
+/* ---- the agreement and the form ---- */
+function viewAgreement() {
+  const d = S.doc, t = T[S.lang], L = d.lessor, money = n => nfmt(n, S.lang);
+  const sum = d.items.reduce((n, i) => n + (Number(i.value) || 0), 0);
+  const fact = (label, value, cls) => `<div><dt>${esc(label)}</dt><dd${cls ? ` class="${cls}"` : ''}>${value}</dd></div>`;
+  const lessorLines = [[L.street, L.city].filter(Boolean).join(', '), L.cvr ? `CVR-nr.: ${L.cvr}` : '', L.phone ? `${t.phone}: ${L.phone}` : '', L.email || ''].filter(Boolean).map(x => `<br>${esc(x)}`).join('');
+  let h = `<p class="lead">${esc(t.lead)}</p><p class="note">${esc(t.priv)}</p>`;
+  h += `<section class="sheet"><div><h1>${esc(t.title)}</h1><p class="muted num">${esc(t.dateLbl)}: ${esc(dmy(d.date))}</p></div>`;
+  h += `<dl class="parties">${fact(t.lessor, `<b>${esc(L.name)}</b>${lessorLines}`)}${fact(t.renter, `<b>${esc(d.renter)}</b>`)}</dl>`;
+  h += `<dl class="facts">${fact(t.period, `${esc(dmy(d.start))} – ${d.due ? esc(dmy(d.due)) : '…'}`, 'num')}${d.place ? fact(t.place, esc(d.place)) : ''}${num(d.price) ? fact(t.price, `${esc(money(num(d.price)))} DKK`, 'num') : ''}`;
+  h += `${fact(t.deposit, d.deposit ? `${esc(money(num(d.deposit)))} DKK` : esc(t.none), 'num')}${fact(t.deductible, d.deductible ? `${esc(money(num(d.deductible)))} DKK` : esc(t.none), 'num')}</dl>`;
+  h += `<h2>${esc(t.equip)} · <span class="count">${d.items.length}</span></h2><ul class="gear">${d.items.map(i => {
+    const meta = [i.serial ? `${t.cols[2]} ${i.serial}` : '', Number(i.value) ? `${t.cols[3]} ${money(i.value)}` : '', i.cond ? `${t.cond}: ${i.cond}` : ''].filter(Boolean).join(' · ');
+    return `<li><span class="id">${esc(i.id)}</span><span class="what"><b>${esc(i.name)}</b>${meta ? `<small class="num">${esc(meta)}</small>` : ''}</span></li>`;
+  }).join('')}</ul><p class="total">${esc(t.total)}: ${esc(money(sum))} DKK</p>`;
+  h += `<h2>${esc(t.terms)}</h2><div class="terms">${d.terms.split('\n').map(p => p.trim()).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join('')}</div></section>`;
+  h += `<form class="sheet" id="f" novalidate autocomplete="on"><h2>${esc(t.you)}</h2><div class="fields">`;
+  h += `<div class="field full"><label class="lbl" for="name">${esc(t.name)}</label><input id="name" type="text" autocomplete="name" autocapitalize="words" spellcheck="false" maxlength="120"><p class="note">${esc(t.nameHint)}</p></div>`;
+  h += `<div class="field full"><label class="lbl" for="addr">${esc(t.addr)}</label><textarea id="addr" rows="2" autocomplete="street-address" maxlength="300"></textarea></div>`;
+  h += `<div class="field"><label class="lbl" for="rid">${esc(t.rid)}</label><input id="rid" type="text" autocomplete="off" spellcheck="false" maxlength="60"></div>`;
+  h += `<div class="field"><label class="lbl" for="contact">${esc(t.contactIn)}</label><input id="contact" type="text" autocomplete="off" spellcheck="false" maxlength="120"></div></div>`;
+  h += `<label class="check" for="accept"><input type="checkbox" id="accept"><span>${esc(d.accept)}</span></label>`;
+  h += `<div class="field"><span class="lbl" id="pad-l">${esc(t.here)}</span><div class="pad"><canvas id="pad" role="img" aria-labelledby="pad-l"></canvas><span class="x" aria-hidden="true">×</span></div></div>`;
+  h += `<p class="err" id="msg" role="alert" hidden></p><div class="actions"><button class="btn primary big" id="go" type="submit">${esc(t.go)}</button><button class="btn" id="clear" type="button">${esc(t.clear)}</button></div></form>`;
+  show(h);
+  padInit();
+  $('#clear').addEventListener('click', () => { S.strokes = []; sigPaint($('#pad'), []); });
+  $('#f').addEventListener('submit', e => { e.preventDefault(); sign(); });
+}
+async function sign() {
+  const t = T[S.lang], name = nfc($('#name').value), addr = String($('#addr').value || '').trim(), go = $('#go');
+  const say = (m, el) => { const e = $('#msg'); e.textContent = m; e.hidden = !m; if (m && el) el.focus(); };
+  if (!name) return say(t.needName, $('#name'));
+  if (!addr) return say(t.needAddr, $('#addr'));
+  if (!$('#accept').checked) return say(t.needAccept, $('#accept'));
+  if (sigInk(S.strokes) < 120) return say(t.needInk);
+  say(''); go.disabled = true; go.textContent = t.working;
+  const now = new Date();
+  const rec = { v: 1, h: S.hash, l: S.lang, n: name.slice(0, 120), a: addr.slice(0, 300), r: nfc($('#rid').value).slice(0, 60), c: nfc($('#contact').value).slice(0, 120),
+    t: now.toISOString(), z: -now.getTimezoneOffset(), p: S.h, s: S.strokes.map(s => s.join(',')), u: String(navigator.userAgent || '').slice(0, 240) };
+  S.code = 'AKHCSIG1.' + await zipJson(rec) + '.END';
+  try { await Promise.race([pdfLib, new Promise((_, rej) => setTimeout(() => rej(new Error('PDF library is slow')), 20000))]); S.pdf = makePdf(S.doc, rec, S.hash, S.code); }
+  catch (e) { console.error(e); S.pdf = null; }
+  viewDone();
+}
+
+/* ---- the signed PDF: the same layout as the lessor's copy, with the return code tucked into its keywords ---- */
+function sigWhen(rec, lang) {
+  const tz = Number(rec.z) || 0, d = new Date(Date.parse(rec.t) + tz * 60000), ab = Math.abs(tz);
+  return `${pad2(d.getUTCDate())}.${pad2(d.getUTCMonth() + 1)}.${d.getUTCFullYear()} ${T[lang].at} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} (UTC${tz < 0 ? '-' : '+'}${pad2(Math.floor(ab / 60))}:${pad2(ab % 60)})`;
+}
+function makePdf(d, rec, hash, code) {
+  const { jsPDF } = window.jspdf, lang = S.lang, t = T[lang], L = d.lessor, pdf = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  pdf.setProperties({ title: `${t.title} ${d.renter}`, creator: 'AKHC Gear', keywords: code });
+  const clean = s => String(s ?? '').replace(/[–—]/g, '-').replace(/×/g, 'x').replace(/[“”„]/g, '"').replace(/[‘’]/g, "'").replace(/[^\n\x20-\xFF]/g, '');
+  const txt = (s, x, y, o) => pdf.text(clean(s), x, y, o);
+  const font = (st, sz, gray) => { pdf.setFont('helvetica', st); pdf.setFontSize(sz); pdf.setTextColor(gray || 0); };
+  const money = n => nfmt(n, lang);
+  const top = first => { font('bold', first ? 19 : 12); txt(L.name, 105, first ? 17 : 13, { align: 'center' }); };
+  const newPage = () => { pdf.addPage(); top(false); return 34; };
+  top(true);
+  font('bold', 14); txt(t.title, 18, 42);
+  font('normal', 9); txt(`${t.dateLbl}: ${dmy(d.date)}`, 18, 48);
+  font('bold', 8, 100); txt(t.lessor.toUpperCase(), 18, 60); txt(t.renter.toUpperCase(), 108, 60);
+  font('normal', 10);
+  [L.name, L.street, L.city, L.cvr ? `CVR-nr.: ${L.cvr}` : '', [L.phone, L.email].filter(Boolean).join(' - ')].filter(Boolean).forEach((s, i) => txt(s, 18, 66 + i * 4.8));
+  const rl = [d.renter, ...String(rec.a || '').split('\n').map(s => s.trim()).filter(Boolean), rec.r ? `${t.id}: ${rec.r}` : '', rec.c ? `${t.contact}: ${rec.c}` : ''].filter(Boolean);
+  rl.slice(0, 6).forEach((s, i) => { font(i === 0 ? 'bold' : 'normal', 10); pdf.splitTextToSize(clean(s), 82).slice(0, 1).forEach(x => pdf.text(x, 108, 66 + i * 4.8)); });
+  let y = 96;
+  font('bold', 8, 100); txt(t.period.toUpperCase(), 18, y);
+  font('normal', 10); txt(`${t.from}: ${dmy(d.start)}     ${t.to}: ${dmy(d.due) || '________'}`, 18, y + 6);
+  if (d.place) txt(`${t.place}: ${d.place}`, 108, y + 6);
+  y += 16;
+  const head = yy => { font('bold', 8, 100); txt(t.cols[0], 31, yy, { align: 'right' }); txt(t.cols[1], 34, yy); txt(t.cols[2], 128, yy); txt(t.cols[3], 192, yy, { align: 'right' }); pdf.setDrawColor(120); pdf.setLineWidth(0.2); pdf.line(18, yy + 1.8, 192, yy + 1.8); };
+  font('bold', 8, 100); txt(t.equip.toUpperCase(), 18, y); y += 5; head(y); y += 7;
+  let sum = 0;
+  for (const it of d.items) {
+    font('normal', 9.5);
+    const nm = pdf.splitTextToSize(clean(it.name), 88), cond = it.cond ? pdf.splitTextToSize(clean(`${t.cond}: ${it.cond}`), 88) : [], h = (nm.length + cond.length) * 4.3 + 1.6, value = Number(it.value) || 0;
+    if (y + h > 262) { y = newPage(); head(y); y += 7; }
+    font('normal', 9.5); txt(it.id, 31, y, { align: 'right' }); nm.forEach((s, i) => pdf.text(s, 34, y + i * 4.3));
+    txt(it.serial || '', 128, y); txt(value ? money(value) : '', 192, y, { align: 'right' });
+    if (cond.length) { font('normal', 8, 90); cond.forEach((s, i) => pdf.text(s, 34, y + (nm.length + i) * 4.3)); }
+    sum += value; y += h;
+  }
+  pdf.setDrawColor(120); pdf.line(18, y, 192, y); y += 6;
+  font('bold', 10); txt(t.total, 128, y); txt(money(sum), 192, y, { align: 'right' }); y += 6;
+  font('normal', 10);
+  if (num(d.price)) { const amt = money(num(d.price)); txt(t.price, 192 - pdf.getTextWidth(amt) - 3, y, { align: 'right' }); txt(amt, 192, y, { align: 'right' }); y += 5.5; }
+  txt(`${t.deposit}: ${d.deposit ? money(num(d.deposit)) + ' DKK' : t.none}`, 18, y); txt(`${t.deductible}: ${d.deductible ? money(num(d.deductible)) + ' DKK' : t.none}`, 108, y); y += 9;
+  const need = 20 + pdf.splitTextToSize(clean(d.terms), 174).length * 4.1;
+  if (y + Math.min(need, 90) > 262) y = newPage();
+  font('bold', 8, 100); txt(t.terms.toUpperCase(), 18, y); y += 5;
+  font('normal', 8.5);
+  for (const para of String(d.terms || '').split('\n')) {
+    const ls = pdf.splitTextToSize(clean(para), 174);
+    if (y + ls.length * 4.1 > 262) { y = newPage(); font('normal', 8.5); }
+    ls.forEach(s => { pdf.text(s, 18, y); y += 4.1; }); y += 1.2;
+  }
+  if (y > 212) y = newPage();
+  y = Math.max(y + 28, 230);
+  const st = rec.s.map(s => s.split(',').map(Number)), b = sigBox(st), k = Math.min(64 / Math.max(b.x1 - b.x0, 1), 20 / Math.max(b.y1 - b.y0, 1), 0.11), ox = 108 + 3 - b.x0 * k, oy = y + 1.5 - b.y1 * k;
+  pdf.setDrawColor(0); pdf.setLineWidth(0.4); pdf.setLineCap(1); pdf.setLineJoin(1);
+  for (const p of st) {
+    if (p.length < 4) { pdf.line(ox + p[0] * k, oy + p[1] * k, ox + p[0] * k + 0.05, oy + p[1] * k); continue; }
+    const seg = []; for (let i = 2; i + 1 < p.length; i += 2) seg.push([(p[i] - p[i - 2]) * k, (p[i + 1] - p[i - 1]) * k]);
+    pdf.lines(seg, ox + p[0] * k, oy + p[1] * k, [1, 1], 'S', false);
+  }
+  pdf.setLineCap(0); pdf.setLineJoin(0);
+  pdf.setDrawColor(0); pdf.setLineWidth(0.3); pdf.line(18, y, 88, y); pdf.line(108, y, 178, y);
+  font('normal', 8, 90); txt(`${t.lessor}: ${t.sign}`, 18, y + 4.5);
+  pdf.text(pdf.splitTextToSize(clean(`${t.renter}: ${rec.n}`), 82)[0], 108, y + 4.5); txt(`${t.esigned} ${sigWhen(rec, lang)}`, 108, y + 8.3);
+  let ry = y + 16;
+  font('bold', 7, 100); txt(t.record, 18, ry); ry += 3.6; font('normal', 7, 90);
+  for (const ln of [t.device, `${t.stmt}: "${d.accept}"`, `${t.docid}: ${hash}`]) for (const x of pdf.splitTextToSize(clean(ln), 174)) { pdf.text(x, 18, ry); ry += 3.4; }
+  const n = pdf.getNumberOfPages();
+  for (let p = 1; p <= n; p++) {
+    pdf.setPage(p); pdf.setDrawColor(120); pdf.setLineWidth(0.2); pdf.line(18, 281, 192, 281);
+    font('normal', 7, 90); txt([L.name, L.street, L.city, L.cvr ? `CVR-nr.: ${L.cvr}` : ''].filter(Boolean).join(' - '), 105, 285, { align: 'center' });
+    txt([L.phone ? `${t.phone}: ${L.phone}` : '', L.email ? `${t.mail}: ${L.email}` : ''].filter(Boolean).join(' - '), 105, 289, { align: 'center' });
+    font('normal', 7.5, 90); txt(`${t.page} ${p} ${t.of} ${n}`, 192, 13, { align: 'right' });
+    font('normal', 6.5, 110); txt(`ID ${hash.slice(0, 16)}`, 192, 16.5, { align: 'right' });
+  }
+  return pdf.output('blob');
+}
+
+/* ---- after signing: hand the PDF back ---- */
+function viewDone() {
+  const t = T[S.lang], d = S.doc, L = d.lessor;
+  const name = `${t.fileBase}_${nfc(d.renter).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_')}_${String(d.start || '').slice(0, 10)}_${t.file}.pdf`;
+  let h = `<section class="sheet done"><p class="tick" aria-hidden="true">✓</p><h1>${esc(t.doneH)}</h1><p class="lead">${esc(t.doneLead(L.name))}</p>`;
+  let canShare = false;
+  if (S.pdf) {
+    try { S.file = new File([S.pdf], name, { type: 'application/pdf' }); canShare = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [S.file] })); } catch (e) { canShare = false; }
+    h += `<div class="actions">${canShare ? `<button class="btn primary big" id="share" type="button">${esc(t.share)}</button>` : ''}<a class="btn${canShare ? '' : ' primary big'}" id="dl" href="${URL.createObjectURL(S.pdf)}" download="${esc(name)}">${esc(t.download)}</a></div><p class="note">${esc(t.keep)}</p>`;
+  } else h += `<p class="err">${esc(t.noPdf)}</p>`;
+  h += `<dl><div><dt>${esc(t.sendTo)}</dt><dd><b>${esc(L.name)}</b>${L.phone ? `<br>${esc(t.phone)} ${esc(L.phone)}` : ''}${L.email ? `<br>${esc(L.email)}` : ''}</dd></div></dl>`;
+  h += `<details${S.pdf ? '' : ' open'}><summary>${esc(t.codeH)}</summary><p class="note">${esc(t.codeLead)}</p><textarea id="code" rows="5" readonly spellcheck="false">${esc(S.code)}</textarea>`;
+  h += `<div class="actions"><button class="btn" id="copy" type="button">${esc(t.copy)}</button>${L.email ? `<a class="btn" id="mail" href="mailto:${esc(String(L.email).replace(/[^\w.@+-]/g, ''))}?subject=${encodeURIComponent(t.mailSubject(d.renter))}&amp;body=${encodeURIComponent(t.mailBody + '\n\n' + S.code)}">${esc(t.mailIt)}</a>` : ''}</div><p class="note" id="copymsg" role="status"></p></details></section>`;
+  show(h);
+  if (canShare) $('#share').addEventListener('click', () => { navigator.share({ files: [S.file], title: t.shareTitle, text: t.shareText(d.renter) }).catch(() => { /* the share sheet was closed */ }); });
+  $('#copy').addEventListener('click', async () => {
+    const ta = $('#code'), say = m => { $('#copymsg').textContent = m; };
+    try { await navigator.clipboard.writeText(ta.value); say(t.copied); return; } catch (e) { /* select it instead */ }
+    ta.focus(); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    say(ok ? t.copied : t.copyFail);
+  });
+}
+
+async function boot() {
+  const frag = (location.hash || '').slice(1);
+  if (!frag) return fail('errNo');
+  let d = null; try { d = await unzipJson(frag); } catch (e) { return fail(frag[0] === '1' && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'); }
+  if (!okDoc(d)) return fail('errBad');
+  S.doc = d; S.lang = d.lang === 'en' ? 'en' : 'da'; document.documentElement.lang = S.lang;
+  S.hash = await sha256Hex(canon(d));
+  const t = T[S.lang];
+  document.title = `${t.kind} · ${d.lessor.name}`; $('#who').textContent = d.lessor.name; $('#kind').textContent = t.kind; $('#foot').textContent = t.foot;
+  viewAgreement();
+}
+window.addEventListener('hashchange', () => location.reload());
+boot();
+})();
+</script>
+</body>
+</html>
