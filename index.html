@@ -116,7 +116,7 @@ const T = {
     doneH: 'Underskrevet', doneLead: n => `Ét trin mangler: send den underskrevne aftale tilbage til ${n}.`, share: 'Send den underskrevne aftale', download: 'Hent PDF-filen', keep: 'PDF-filen er også dit eget eksemplar af aftalen. Gem den.', sendTo: 'Send den til',
     codeH: 'Kan du ikke sende PDF-filen?', codeLead: 'Kopiér returkoden herunder, og send den som almindelig tekst i stedet. Den indeholder din underskrift og dine oplysninger.', copy: 'Kopiér returkoden', copied: 'Kopieret. Sæt den ind i en besked.', copyFail: 'Markér teksten i feltet, og kopiér den.', mailIt: 'Send koden med e-mail',
     noPdf: 'PDF-filen kunne ikke laves på denne enhed. Send returkoden herunder i stedet.', shareTitle: 'Underskrevet lejeaftale', shareText: n => `Underskrevet lejeaftale, ${n}`, mailSubject: n => `Underskrevet lejeaftale, ${n}`, mailBody: 'Her er returkoden for min underskrift på lejeaftalen:',
-    errNo: 'Linket mangler selve aftalen. Bed om et nyt link.', errBad: 'Linket er ufuldstændigt. Det sker, når kun en del af linket bliver kopieret. Bed om et nyt link.', errOld: 'Denne browser er for gammel til at åbne aftalen. Åbn linket i en opdateret Safari eller Chrome.',
+    errNo: 'Linket mangler selve aftalen. Bed om et nyt link.', errBad: 'Linket er ufuldstændigt. Det sker, når kun en del af linket bliver kopieret. Bed om et nyt link.', errOld: 'Denne browser er for gammel til at åbne aftalen. Åbn linket i en opdateret Safari eller Chrome.', errVer: 'Linket er lavet til en anden udgave af denne side. Bed om et nyt link.',
     foot: 'Aftalen ligger i selve linket. Denne side gemmer ingenting og har ingen server.' },
   en: { kind: 'Rental agreement', title: 'RENTAL AGREEMENT', dateLbl: 'Agreement date', lessor: 'Lessor', renter: 'Renter', period: 'Rental period', from: 'From', to: 'To', contact: 'Contact', id: 'CVR/ID no.', equip: 'Equipment',
     cols: ['No.', 'Equipment', 'Serial no.', 'Replacement value DKK'], total: 'Total replacement value', price: 'Expected rental price excl. VAT', deposit: 'Deposit', deductible: 'Deductible', none: 'None', terms: 'Terms',
@@ -128,9 +128,14 @@ const T = {
     doneH: 'Signed', doneLead: n => `One step left: send the signed agreement back to ${n}.`, share: 'Send the signed agreement', download: 'Download the PDF', keep: 'The PDF is also your own copy of the agreement. Keep it.', sendTo: 'Send it to',
     codeH: "Can't send the PDF?", codeLead: 'Copy the return code below and send it as plain text instead. It holds your signature and your details.', copy: 'Copy the return code', copied: 'Copied. Paste it into a message.', copyFail: 'Select the text in the box and copy it.', mailIt: 'Send the code by email',
     noPdf: 'The PDF could not be made on this device. Send the return code below instead.', shareTitle: 'Signed rental agreement', shareText: n => `Signed rental agreement, ${n}`, mailSubject: n => `Signed rental agreement, ${n}`, mailBody: 'Here is the return code for my signature on the rental agreement:',
-    errNo: 'This link does not hold an agreement. Ask for a new link.', errBad: 'This link is incomplete. That happens when only part of it was copied. Ask for a new link.', errOld: 'This browser is too old to open the agreement. Open the link in an up-to-date Safari or Chrome.',
+    errNo: 'This link does not hold an agreement. Ask for a new link.', errBad: 'This link is incomplete. That happens when only part of it was copied. Ask for a new link.', errOld: 'This browser is too old to open the agreement. Open the link in an up-to-date Safari or Chrome.', errVer: 'This link was made for another version of this page. Ask for a new link.',
     foot: 'The agreement is inside the link itself. This page stores nothing and has no server.' },
 };
+
+/* The default terms and the acceptance sentences, word for word as in the gear tracker. A link sends a number instead of
+   these texts; the page puts the text back and checks the result against the document ID. Generated from the tracker. */
+const TERMS = {"en": "1. The equipment listed above belongs to the Lessor and is hired to the Renter for the period stated. The Renter takes over the risk for the equipment at handover and keeps it until the Lessor has received it back and checked it.\n2. The Renter returns the equipment complete, clean and in the same condition as at handover, normal wear excepted, by the agreed time. Late return is charged at the day rate for every started day.\n3. The Renter is liable for loss, theft and damage, including fire, water and misuse, and pays repair or replacement at the replacement value stated above. The Renter insures the equipment against all risks for the rental period, or carries that liability alone. A deductible may be agreed in this agreement.\n4. The equipment may only be used by competent persons, may not be lent or sub-hired to others and may not be taken abroad without the Lessor's written consent. Use in rain, spray, dust or extreme heat or cold requires suitable protection.\n5. The Renter reports any defect or damage to the Lessor at once. The Lessor is not liable for loss caused by a fault in the equipment, such as lost recordings or production delays. The Renter checks recordings and media during the rental.\n6. Prices are in DKK excl. VAT unless stated. Payment follows the Lessor's invoice.", "da": "1. Det ovenfor anførte udstyr tilhører Udlejer og udlejes til Lejer for den angivne periode. Lejer overtager risikoen for udstyret ved udlevering og bærer den, indtil Udlejer har modtaget udstyret tilbage og gennemgået det.\n2. Lejer afleverer udstyret komplet, rent og i samme stand som ved udlevering, normal slitage undtaget, til det aftalte tidspunkt. Ved for sen aflevering betales dagspris for hver påbegyndt dag.\n3. Lejer hæfter for bortkomst, tyveri og skade, herunder brand, vand og misbrug, og betaler reparation eller erstatning til den ovenfor angivne genanskaffelsesværdi. Lejer forsikrer udstyret mod alle risici i lejeperioden eller bærer ansvaret selv. En selvrisiko kan aftales i denne aftale.\n4. Udstyret må kun bruges af kompetente personer, må ikke udlånes eller fremlejes og må ikke tages med til udlandet uden Udlejers skriftlige samtykke. Brug i regn, sprøjt, støv eller ekstrem varme eller kulde kræver passende beskyttelse.\n5. Lejer melder straks fejl og skader til Udlejer. Udlejer er ikke ansvarlig for tab som følge af fejl ved udstyret, fx mistede optagelser eller forsinkelser i produktionen. Lejer kontrollerer optagelser og medier undervejs.\n6. Priser er i DKK ekskl. moms, medmindre andet er angivet. Betaling sker efter Udlejers faktura."};
+const ACCEPT = {"en": ["I have read this rental agreement and accept it. I confirm that I have received the equipment listed above.", "I have read this rental agreement and accept it. I will check the equipment against this list when I collect it."], "da": ["Jeg har læst denne lejeaftale og accepterer den. Jeg bekræfter, at jeg har modtaget det ovenfor anførte udstyr.", "Jeg har læst denne lejeaftale og accepterer den. Jeg kontrollerer udstyret efter denne liste, når jeg henter det."]};
 
 /* ---- the same fingerprint as the tracker: keys sorted, text NFC, SHA-256 ---- */
 function canon(v) {
@@ -177,8 +182,8 @@ async function zipJson(obj) {
 }
 async function unzipJson(s) {
   const bytes = unb64u(String(s).slice(1));
-  if (s[0] === '0') return JSON.parse(new TextDecoder().decode(bytes));
-  if (s[0] !== '1' || typeof DecompressionStream !== 'function') throw new Error('cannot unpack');
+  if (s[0] === '0' || s[0] === '3') return JSON.parse(new TextDecoder().decode(bytes));
+  if ((s[0] !== '1' && s[0] !== '2') || typeof DecompressionStream !== 'function') throw new Error('cannot unpack');
   return JSON.parse(new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()));
 }
 
@@ -190,6 +195,14 @@ const pdfLib = new Promise((res, rej) => { // fetched while the renter reads, so
 });
 pdfLib.catch(() => {});
 
+/* A link whose first character is 2 or 3 holds the short spelling; this puts the full agreement back together. */
+function expand(c) {
+  const lang = c.l === 'da' ? 'da' : 'en', L = Array.isArray(c.L) ? c.L : [];
+  return { v: 1, lang: c.l, date: c.d || '', lessor: { name: L[0] || '', street: L[1] || '', city: L[2] || '', cvr: L[3] || '', phone: L[4] || '', email: L[5] || '' },
+    renter: c.r || '', addr: '', rid: '', contact: '', start: c.s || '', due: c.u || '', place: c.p || '', price: c.pr || '', deposit: c.dp || '', deductible: c.dd || '',
+    terms: c.t === 1 ? TERMS[lang] : String(c.t || ''), accept: c.a === 1 ? ACCEPT[lang][0] : c.a === 2 ? ACCEPT[lang][1] : String(c.a || ''), req: c.q || '',
+    items: (Array.isArray(c.i) ? c.i : []).map(a => ({ id: a[0], name: a[1], serial: a[2] || '', value: a[3] || 0, cond: a[4] || '' })) };
+}
 function okDoc(d) {
   const str = (v, n) => typeof v === 'string' && v.length <= n;
   return !!d && typeof d === 'object' && d.v === 1 && str(d.renter, 200) && !!d.renter.trim() && str(d.terms, 20000) && !!d.terms.trim() && str(d.accept, 600) && !!d.accept.trim()
@@ -401,8 +414,10 @@ function viewDone() {
 async function boot() {
   const frag = (location.hash || '').slice(1);
   if (!frag) return fail('errNo');
-  let d = null; try { d = await unzipJson(frag); } catch (e) { return fail(frag[0] === '1' && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'); }
+  const short = frag[0] === '2' || frag[0] === '3';
+  let d = null, c = null; try { c = await unzipJson(frag); d = short ? expand(c) : c; } catch (e) { return fail((frag[0] === '1' || frag[0] === '2') && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'); }
   if (!okDoc(d)) return fail('errBad');
+  if (short && !(typeof c.h === 'string' && c.h.length >= 8 && (await sha256Hex(canon(d))).startsWith(c.h))) return fail('errVer'); // the page and the tracker disagree about a built-in text
   S.doc = d; S.lang = d.lang === 'da' ? 'da' : 'en'; document.documentElement.lang = S.lang;
   S.hash = await sha256Hex(canon(d));
   const t = T[S.lang];
