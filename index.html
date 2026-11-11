@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,7 +8,7 @@
 <!-- This page has no server behind it. The policy below also stops it from sending anything anywhere:
      no network requests at all (connect-src 'none'), no forms posted, the one outside script is the PDF library. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
-<title>Lejeaftale · Rental agreement</title>
+<title>Rental agreement · Lejeaftale</title>
 <style>
 /* Layout: one column, a document to read and a form to sign at the end. The agreement sits on a sheet; the
    signature pad is paper white in both themes, like the form it replaces. No outside fonts or images. */
@@ -86,7 +86,7 @@ footer.wrap { padding-block: 0 24px; font-size: 13px; color: var(--muted); }
 </head>
 <body>
 <header class="top"><div class="wrap"><span class="who" id="who"></span><span class="kind" id="kind"></span></div></header>
-<main class="wrap" id="app"><noscript><p class="lead">This page needs JavaScript to show and sign the agreement. · Siden skal bruge JavaScript for at vise og underskrive aftalen.</p></noscript></main>
+<main class="wrap" id="app"><noscript><p class="lead">This page needs JavaScript to show and sign the agreement.</p><p class="lead muted">Siden skal bruge JavaScript for at vise og underskrive aftalen.</p></noscript></main>
 <footer class="wrap" id="foot"></footer>
 <script>
 (() => {
@@ -183,7 +183,7 @@ async function unzipJson(s) {
 }
 
 /* ---- state ---- */
-const S = { doc: null, hash: '', lang: 'da', strokes: [], h: 300, code: '', pdf: null, file: null, fit: null };
+const S = { doc: null, hash: '', lang: 'en', strokes: [], h: 300, code: '', pdf: null, file: null, fit: null };
 const pdfLib = new Promise((res, rej) => { // fetched while the renter reads, so signing does not wait for it
   const s = document.createElement('script'); s.src = PDF_LIB.src; s.integrity = PDF_LIB.sri; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
   s.onload = res; s.onerror = () => rej(new Error('PDF library did not load')); document.head.appendChild(s);
@@ -199,8 +199,8 @@ function okDoc(d) {
 }
 function show(html) { $('#app').innerHTML = html; window.scrollTo(0, 0); }
 function fail(key) {
-  const both = k => `<p class="lead">${esc(T.da[k])}</p><p class="lead muted">${esc(T.en[k])}</p>`;
-  $('#kind').textContent = 'Lejeaftale · Rental agreement';
+  const both = k => `<p class="lead">${esc(T.en[k])}</p><p class="lead muted">${esc(T.da[k])}</p>`; // English first; the page only turns Danish for an agreement made in Danish
+  $('#kind').textContent = 'Rental agreement · Lejeaftale';
   show(`<section class="sheet">${both(key)}</section>`);
 }
 
@@ -403,7 +403,7 @@ async function boot() {
   if (!frag) return fail('errNo');
   let d = null; try { d = await unzipJson(frag); } catch (e) { return fail(frag[0] === '1' && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'); }
   if (!okDoc(d)) return fail('errBad');
-  S.doc = d; S.lang = d.lang === 'en' ? 'en' : 'da'; document.documentElement.lang = S.lang;
+  S.doc = d; S.lang = d.lang === 'da' ? 'da' : 'en'; document.documentElement.lang = S.lang;
   S.hash = await sha256Hex(canon(d));
   const t = T[S.lang];
   document.title = `${t.kind} · ${d.lessor.name}`; $('#who').textContent = d.lessor.name; $('#kind').textContent = t.kind; $('#foot').textContent = t.foot;
