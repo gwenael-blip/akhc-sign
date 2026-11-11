@@ -94,6 +94,10 @@ footer.wrap { padding-block: 0 24px; font-size: 13px; color: var(--muted); }
 /* The agreement arrives packed into the part of the link after "#", which browsers never send to a server.
    The page unpacks it, shows it, takes a signature and builds a PDF, all on this device. It must stay in step with
    the gear tracker in three places: the shape of the agreement (sigDoc), canon() and the return code. */
+/* Short links: the lessor's browser stores the agreement here, encrypted, and the link carries only the key.
+   STORE is the address of a small key-value store (a Firebase Realtime Database). Empty = short links are off.
+   When it is set, the content policy in the head must allow that one address under connect-src. */
+const STORE = '';
 const PDF_LIB = { src: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', sri: 'sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==' };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -116,7 +120,9 @@ const T = {
     doneH: 'Underskrevet', doneLead: n => `Ét trin mangler: send den underskrevne aftale tilbage til ${n}.`, share: 'Send den underskrevne aftale', download: 'Hent PDF-filen', keep: 'PDF-filen er også dit eget eksemplar af aftalen. Gem den.', sendTo: 'Send den til',
     codeH: 'Kan du ikke sende PDF-filen?', codeLead: 'Kopiér returkoden herunder, og send den som almindelig tekst i stedet. Den indeholder din underskrift og dine oplysninger.', copy: 'Kopiér returkoden', copied: 'Kopieret. Sæt den ind i en besked.', copyFail: 'Markér teksten i feltet, og kopiér den.', mailIt: 'Send koden med e-mail',
     noPdf: 'PDF-filen kunne ikke laves på denne enhed. Send returkoden herunder i stedet.', shareTitle: 'Underskrevet lejeaftale', shareText: n => `Underskrevet lejeaftale, ${n}`, mailSubject: n => `Underskrevet lejeaftale, ${n}`, mailBody: 'Her er returkoden for min underskrift på lejeaftalen:',
-    errNo: 'Linket mangler selve aftalen. Bed om et nyt link.', errBad: 'Linket er ufuldstændigt. Det sker, når kun en del af linket bliver kopieret. Bed om et nyt link.', errOld: 'Denne browser er for gammel til at åbne aftalen. Åbn linket i en opdateret Safari eller Chrome.', errVer: 'Linket er lavet til en anden udgave af denne side. Bed om et nyt link.',
+    errNo: 'Linket mangler selve aftalen. Bed om et nyt link.', errBad: 'Linket er ufuldstændigt. Det sker, når kun en del af linket bliver kopieret. Bed om et nyt link.', errOld: 'Denne browser er for gammel til at åbne aftalen. Åbn linket i en opdateret Safari eller Chrome.', errVer: 'Linket er lavet til en anden udgave af denne side. Bed om et nyt link.', errGone: 'Linket virker ikke længere. Bed om et nyt link.', errNet: 'Aftalen kunne ikke hentes. Tjek forbindelsen, og åbn linket igen.',
+    privS: 'Aftalen er hentet i krypteret form og låst op på din egen enhed. Dine oplysninger og din underskrift bliver på enheden, indtil du selv sender den underskrevne aftale tilbage.', footS: 'Aftalen opbevares krypteret, og kun dette link kan åbne den. Dine oplysninger og din underskrift bliver ikke uploadet.',
+    msg: (when, url) => `Hej. Her er lejeaftalen for ${when}. Åbn linket, læs aftalen og underskriv med fingeren. Send derefter den underskrevne PDF tilbage til mig.\n\n${url}`,
     foot: 'Aftalen ligger i selve linket. Denne side gemmer ingenting og har ingen server.' },
   en: { kind: 'Rental agreement', title: 'RENTAL AGREEMENT', dateLbl: 'Agreement date', lessor: 'Lessor', renter: 'Renter', period: 'Rental period', from: 'From', to: 'To', contact: 'Contact', id: 'CVR/ID no.', equip: 'Equipment',
     cols: ['No.', 'Equipment', 'Serial no.', 'Replacement value DKK'], total: 'Total replacement value', price: 'Expected rental price excl. VAT', deposit: 'Deposit', deductible: 'Deductible', none: 'None', terms: 'Terms',
@@ -128,7 +134,9 @@ const T = {
     doneH: 'Signed', doneLead: n => `One step left: send the signed agreement back to ${n}.`, share: 'Send the signed agreement', download: 'Download the PDF', keep: 'The PDF is also your own copy of the agreement. Keep it.', sendTo: 'Send it to',
     codeH: "Can't send the PDF?", codeLead: 'Copy the return code below and send it as plain text instead. It holds your signature and your details.', copy: 'Copy the return code', copied: 'Copied. Paste it into a message.', copyFail: 'Select the text in the box and copy it.', mailIt: 'Send the code by email',
     noPdf: 'The PDF could not be made on this device. Send the return code below instead.', shareTitle: 'Signed rental agreement', shareText: n => `Signed rental agreement, ${n}`, mailSubject: n => `Signed rental agreement, ${n}`, mailBody: 'Here is the return code for my signature on the rental agreement:',
-    errNo: 'This link does not hold an agreement. Ask for a new link.', errBad: 'This link is incomplete. That happens when only part of it was copied. Ask for a new link.', errOld: 'This browser is too old to open the agreement. Open the link in an up-to-date Safari or Chrome.', errVer: 'This link was made for another version of this page. Ask for a new link.',
+    errNo: 'This link does not hold an agreement. Ask for a new link.', errBad: 'This link is incomplete. That happens when only part of it was copied. Ask for a new link.', errOld: 'This browser is too old to open the agreement. Open the link in an up-to-date Safari or Chrome.', errVer: 'This link was made for another version of this page. Ask for a new link.', errGone: 'This link no longer works. Ask for a new link.', errNet: 'The agreement could not be fetched. Check your connection and open the link again.',
+    privS: 'This agreement was fetched in encrypted form and unlocked on your own device. Your details and signature stay on your device until you send the signed agreement back yourself.', footS: 'The agreement is kept encrypted and only this link can open it. Your details and signature are not uploaded.',
+    msg: (when, url) => `Hi. Here is the rental agreement for ${when}. Open the link, read it and sign with your finger. Then send the signed PDF back to me.\n\n${url}`,
     foot: 'The agreement is inside the link itself. This page stores nothing and has no server.' },
 };
 
@@ -187,8 +195,36 @@ async function unzipJson(s) {
   return JSON.parse(new TextDecoder().decode(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()));
 }
 
+/* ---- short links ----
+   The link holds one random key (22 characters). Two things come from it: the place in the store (so nobody can find
+   an agreement without the link) and the AES-GCM key that unlocks it (so the store only ever holds scrambled text). */
+async function shortParts(k) {
+  const h = async s => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+  return { id: b64u(await h('akhc-sign place ' + k)).slice(0, 20), key: await crypto.subtle.importKey('raw', (await h('akhc-sign key ' + k)).slice(0, 16), 'AES-GCM', false, ['encrypt', 'decrypt']) };
+}
+async function storeShort(packed) { // -> the key for the link
+  if (!STORE) throw 'off';
+  const memo = 'akhc-short:' + (await sha256Hex(packed)).slice(0, 24);
+  try { const had = sessionStorage.getItem(memo); if (had) return had; } catch (e) { /* no storage: just make another */ }
+  const k = b64u(crypto.getRandomValues(new Uint8Array(16))), { id, key } = await shortParts(k), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(packed))), all = new Uint8Array(12 + ct.length);
+  all.set(iv); all.set(ct, 12);
+  const r = await fetch(`${STORE}/s/${id}.json`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ c: b64u(all), t: { '.sv': 'timestamp' } }) });
+  if (!r.ok) throw 'refused';
+  try { sessionStorage.setItem(memo, k); } catch (e) { /* fine */ }
+  return k;
+}
+async function fetchShort(k) { // -> the packed agreement, or throws the key of the message to show
+  if (!STORE || !/^[A-Za-z0-9_-]{22}$/.test(k)) throw 'errBad';
+  if (!(window.crypto && crypto.subtle)) throw 'errOld';
+  const { id, key } = await shortParts(k);
+  let v = null; try { const r = await fetch(`${STORE}/s/${id}.json`, { cache: 'no-store' }); if (!r.ok) throw 0; v = await r.json(); } catch (e) { throw 'errNet'; }
+  if (!v || typeof v.c !== 'string') throw 'errGone';
+  try { const all = unb64u(v.c); return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: all.slice(0, 12) }, key, all.slice(12))); } catch (e) { throw 'errBad'; }
+}
+
 /* ---- state ---- */
-const S = { doc: null, hash: '', lang: 'en', strokes: [], h: 300, code: '', pdf: null, file: null, fit: null };
+const S = { stored: false, doc: null, hash: '', lang: 'en', strokes: [], h: 300, code: '', pdf: null, file: null, fit: null };
 const pdfLib = new Promise((res, rej) => { // fetched while the renter reads, so signing does not wait for it
   const s = document.createElement('script'); s.src = PDF_LIB.src; s.integrity = PDF_LIB.sri; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
   s.onload = res; s.onerror = () => rej(new Error('PDF library did not load')); document.head.appendChild(s);
@@ -267,7 +303,7 @@ function viewAgreement() {
   const sum = d.items.reduce((n, i) => n + (Number(i.value) || 0), 0);
   const fact = (label, value, cls) => `<div><dt>${esc(label)}</dt><dd${cls ? ` class="${cls}"` : ''}>${value}</dd></div>`;
   const lessorLines = [[L.street, L.city].filter(Boolean).join(', '), L.cvr ? `CVR-nr.: ${L.cvr}` : '', L.phone ? `${t.phone}: ${L.phone}` : '', L.email || ''].filter(Boolean).map(x => `<br>${esc(x)}`).join('');
-  let h = `<p class="lead">${esc(t.lead)}</p><p class="note">${esc(t.priv)}</p>`;
+  let h = `<p class="lead">${esc(t.lead)}</p><p class="note">${esc(S.stored ? t.privS : t.priv)}</p>`;
   h += `<section class="sheet"><div><h1>${esc(t.title)}</h1><p class="muted num">${esc(t.dateLbl)}: ${esc(dmy(d.date))}</p></div>`;
   h += `<dl class="parties">${fact(t.lessor, `<b>${esc(L.name)}</b>${lessorLines}`)}${fact(t.renter, `<b>${esc(d.renter)}</b>`)}</dl>`;
   h += `<dl class="facts">${fact(t.period, `${esc(dmy(d.start))} – ${d.due ? esc(dmy(d.due)) : '…'}`, 'num')}${d.place ? fact(t.place, esc(d.place)) : ''}${num(d.price) ? fact(t.price, `${esc(money(num(d.price)))} DKK`, 'num') : ''}`;
@@ -411,17 +447,47 @@ function viewDone() {
   });
 }
 
-async function boot() {
-  const frag = (location.hash || '').slice(1);
-  if (!frag) return fail('errNo');
+async function unpackDoc(frag) { // -> the agreement, or throws the key of the message to show
   const short = frag[0] === '2' || frag[0] === '3';
-  let d = null, c = null; try { c = await unzipJson(frag); d = short ? expand(c) : c; } catch (e) { return fail((frag[0] === '1' || frag[0] === '2') && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'); }
-  if (!okDoc(d)) return fail('errBad');
-  if (short && !(typeof c.h === 'string' && c.h.length >= 8 && (await sha256Hex(canon(d))).startsWith(c.h))) return fail('errVer'); // the page and the tracker disagree about a built-in text
+  let d = null, c = null;
+  try { c = await unzipJson(frag); d = short ? expand(c) : c; } catch (e) { throw (frag[0] === '1' || frag[0] === '2') && typeof DecompressionStream !== 'function' ? 'errOld' : 'errBad'; }
+  if (!okDoc(d)) throw 'errBad';
+  if (short && !(typeof c.h === 'string' && c.h.length >= 8 && (await sha256Hex(canon(d))).startsWith(c.h))) throw 'errVer'; // the page and the tracker disagree about a built-in text
+  return d;
+}
+/* For the lessor: the tracker opens the page with "n" + the packed agreement. The page stores it encrypted and
+   shows the short link with a message to share. If that fails, the long link is offered instead. */
+async function viewShort(packed) {
+  let d = null; try { d = await unpackDoc(packed); } catch (e) { return fail(typeof e === 'string' ? e : 'errBad'); }
+  const lang = d.lang === 'da' ? 'da' : 'en', base = location.href.replace(/#.*$/, ''), when = `${dmy(d.start)}${d.due ? ' - ' + dmy(d.due) : ''}`;
+  document.title = `Short link · ${d.lessor.name}`; $('#who').textContent = d.lessor.name; $('#kind').textContent = 'Short link';
+  show(`<section class="sheet"><div><h1>Short link</h1><p class="muted">For ${esc(d.renter)}: ${d.items.length} item${d.items.length === 1 ? '' : 's'}, ${esc(when)}</p></div><p class="lead" id="st">Storing the agreement…</p></section>`);
+  let url = base + '#' + packed, ok = false;
+  try { url = base + '#s' + await storeShort(packed); ok = true; } catch (e) { console.error(e); }
+  const text = T[lang].msg(when, url), canShare = !!navigator.share;
+  let h = `<section class="sheet"><div><h1>${ok ? 'Short link ready' : 'Long link'}</h1><p class="muted">For ${esc(d.renter)}: ${d.items.length} item${d.items.length === 1 ? '' : 's'}, ${esc(when)}</p></div>`;
+  if (!ok) h += `<p class="err">${STORE ? 'The short link could not be made just now. Check your connection and reload this page to try again.' : 'Short links are not set up yet.'} The long link below works as it is.</p>`;
+  h += `<div class="field"><label class="lbl" for="msg">Message for the renter</label><textarea id="msg" rows="${ok ? 6 : 9}" readonly spellcheck="false">${esc(text)}</textarea></div>`;
+  h += `<div class="actions">${canShare ? `<button class="btn primary big" id="share" type="button">Share the message</button>` : ''}<button class="btn${canShare ? '' : ' primary big'}" id="cpm" type="button">Copy the message</button><button class="btn" id="cpl" type="button">Copy only the link</button></div><p class="note" id="copymsg" role="status"></p>`;
+  h += ok ? `<p class="note">The agreement is stored in scrambled form. Only someone who has this link can read it, and it holds no address, ID number or signature: the renter types and signs those on their own phone, and they come back to you in the signed PDF.</p>`
+          : `<p class="note">Nothing is stored anywhere: the whole agreement travels inside the long link.</p>`;
+  show(h + `</section>`);
+  const say = m => { $('#copymsg').textContent = m; };
+  const copy = async what => { try { await navigator.clipboard.writeText(what); say('Copied. Paste it into a message to the renter.'); } catch (e) { const ta = $('#msg'); ta.focus(); ta.select(); let done = false; try { done = document.execCommand('copy'); } catch (x) { done = false; } say(done ? 'The message is copied.' : 'Select the text in the box and copy it.'); } };
+  if (canShare) $('#share').addEventListener('click', () => { navigator.share({ text }).catch(() => { /* the share sheet was closed */ }); });
+  $('#cpm').addEventListener('click', () => copy(text));
+  $('#cpl').addEventListener('click', () => copy(url));
+}
+async function boot() {
+  let frag = (location.hash || '').slice(1);
+  if (!frag) return fail('errNo');
+  if (frag[0] === 'n') return viewShort(frag.slice(1));
+  if (frag[0] === 's') { try { frag = await fetchShort(frag.slice(1)); S.stored = true; } catch (e) { return fail(typeof e === 'string' ? e : 'errNet'); } }
+  let d = null; try { d = await unpackDoc(frag); } catch (e) { return fail(typeof e === 'string' ? e : 'errBad'); }
   S.doc = d; S.lang = d.lang === 'da' ? 'da' : 'en'; document.documentElement.lang = S.lang;
   S.hash = await sha256Hex(canon(d));
   const t = T[S.lang];
-  document.title = `${t.kind} · ${d.lessor.name}`; $('#who').textContent = d.lessor.name; $('#kind').textContent = t.kind; $('#foot').textContent = t.foot;
+  document.title = `${t.kind} · ${d.lessor.name}`; $('#who').textContent = d.lessor.name; $('#kind').textContent = t.kind; $('#foot').textContent = S.stored ? t.footS : t.foot;
   viewAgreement();
 }
 window.addEventListener('hashchange', () => location.reload());
