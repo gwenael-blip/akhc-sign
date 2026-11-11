@@ -258,7 +258,7 @@ function viewAgreement() {
   h += `<section class="sheet"><div><h1>${esc(t.title)}</h1><p class="muted num">${esc(t.dateLbl)}: ${esc(dmy(d.date))}</p></div>`;
   h += `<dl class="parties">${fact(t.lessor, `<b>${esc(L.name)}</b>${lessorLines}`)}${fact(t.renter, `<b>${esc(d.renter)}</b>`)}</dl>`;
   h += `<dl class="facts">${fact(t.period, `${esc(dmy(d.start))} – ${d.due ? esc(dmy(d.due)) : '…'}`, 'num')}${d.place ? fact(t.place, esc(d.place)) : ''}${num(d.price) ? fact(t.price, `${esc(money(num(d.price)))} DKK`, 'num') : ''}`;
-  h += `${fact(t.deposit, d.deposit ? `${esc(money(num(d.deposit)))} DKK` : esc(t.none), 'num')}${fact(t.deductible, d.deductible ? `${esc(money(num(d.deductible)))} DKK` : esc(t.none), 'num')}</dl>`;
+  h += `${d.deposit ? fact(t.deposit, `${esc(money(num(d.deposit)))} DKK`, 'num') : ''}${fact(t.deductible, d.deductible ? `${esc(money(num(d.deductible)))} DKK` : esc(t.none), 'num')}</dl>`;
   h += `<h2>${esc(t.equip)} · <span class="count">${d.items.length}</span></h2><ul class="gear">${d.items.map(i => {
     const meta = [i.serial ? `${t.cols[2]} ${i.serial}` : '', Number(i.value) ? `${t.cols[3]} ${money(i.value)}` : '', i.cond ? `${t.cond}: ${i.cond}` : ''].filter(Boolean).join(' · ');
     return `<li><span class="id">${esc(i.id)}</span><span class="what"><b>${esc(i.name)}</b>${meta ? `<small class="num">${esc(meta)}</small>` : ''}</span></li>`;
@@ -337,7 +337,8 @@ function makePdf(d, rec, hash, code) {
   font('bold', 10); txt(t.total, 128, y); txt(money(sum), 192, y, { align: 'right' }); y += 6;
   font('normal', 10);
   if (num(d.price)) { const amt = money(num(d.price)); txt(t.price, 192 - pdf.getTextWidth(amt) - 3, y, { align: 'right' }); txt(amt, 192, y, { align: 'right' }); y += 5.5; }
-  txt(`${t.deposit}: ${d.deposit ? money(num(d.deposit)) + ' DKK' : t.none}`, 18, y); txt(`${t.deductible}: ${d.deductible ? money(num(d.deductible)) + ' DKK' : t.none}`, 108, y); y += 9;
+  if (d.deposit) txt(`${t.deposit}: ${money(num(d.deposit))} DKK`, 18, y); // only an older link can still carry a deposit
+  txt(`${t.deductible}: ${d.deductible ? money(num(d.deductible)) + ' DKK' : t.none}`, d.deposit ? 108 : 18, y); y += 9;
   const need = 20 + pdf.splitTextToSize(clean(d.terms), 174).length * 4.1;
   if (y + Math.min(need, 90) > 262) y = newPage();
   font('bold', 8, 100); txt(t.terms.toUpperCase(), 18, y); y += 5;
